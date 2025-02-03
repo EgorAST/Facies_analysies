@@ -1,17 +1,7 @@
 import numpy as np
 from typing import Union
-from functools import wraps
 import time
 
-def determ_the_time_spent(func_0):
-    @wraps(func_0)
-    def func(*args, **kwargs):
-        start_time = time.time()
-        result = func_0(*args, **kwargs)
-        end_time = time.time()
-        print(F"Время затраченное на выполнение функции {func_0} = {end_time-start_time:.2f}")
-        return result
-    return func
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -46,7 +36,6 @@ def calculate_area(segment1: np.ndarray, segment2: np.ndarray) -> float | int:
     """
     return np.sum(abs(segment1 - segment2))
 
-@determ_the_time_spent
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
     """
         Находит наилучшее совпадение фрагмента на полной кривой, используя метод сравнения площадей.

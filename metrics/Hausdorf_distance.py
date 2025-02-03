@@ -43,7 +43,6 @@ def hausdorf_dist(segment1: np.ndarray, segment2: np.ndarray) -> float | int:
     # Возвращаем максимальное расстояние
     return np.max(distances)
 
-#@determ_the_time_spent
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
     """
         Находит наилучшее совпадение фрагмента на полной кривой, используя метод сравнения площадей.

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import numpy as np
 from typing import Union
-from metrics import square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance
+from metrics import square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, Freshe_dist
 from functools import wraps
 import time
 
@@ -280,7 +280,7 @@ class PS_curve():
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
 
         for instance in instances:
-            score, plp = Hausdorf_distance.find_best_match(curve_data, instance.ps_point)
+            score, plp = Freshe_dist.find_best_match(curve_data, instance.ps_point)
 
             len_frag = point_bot - point_top
 
@@ -477,7 +477,6 @@ class Depth_curve:
         self.canvas.create_text(33, y_coord + 52, text=str(y_val), tags="depth_val")
         self.canvas.create_line(4, y_coord + 52, 14, y_coord + 52, tags="depth_val")
         self.canvas.create_line(54, y_coord + 52, 64, y_coord + 52, tags="depth_val")
-
 
 
 def open_las_file(full_path=None):

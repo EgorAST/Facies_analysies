@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union
-import time
+from similaritymeasures import frechet_dist
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -25,16 +25,41 @@ def normalize_data(data: np.ndarray) -> np.ndarray:
         return data - mean
     return (data - mean) / std
 
-
-def calculate_area(segment1: np.ndarray, segment2: np.ndarray) -> float | int:
+def convert_to_2d(curve: np.ndarray) -> np.ndarray:
     """
-    Функция определяет сумму Евклидовых расстояний между точкам
-    :param segment1: Фрагмент кривой
-    :param segment2: Кривая
-    :return:
-    """
-    return np.sqrt(np.sum((segment1 - segment2)**2))
+    Преобразует одномерный массив в двумерный, где каждая точка представлена как [x, y].
 
+    Параметры:
+    ----------
+    curve : np.ndarray
+        Одномерный массив значений.
+
+    Возвращает:
+    ----------
+    curve_2d : np.ndarray
+        Двумерный массив точек [x, y].
+    """
+    return np.array([[x, i] for i, x in enumerate(curve)])
+
+def Freshe_dist(curve1: np.ndarray, curve2: np.ndarray) -> float:
+    """
+    Вычисляет расстояние Фреше между двумя кривыми.
+
+    Параметры:
+    ----------
+    curve1 : np.ndarray
+        Первая кривая, представленная как массив точек (N x 2).
+    curve2 : np.ndarray
+        Вторая кривая, представленная как массив точек (M x 2).
+
+    Возвращает:
+    ----------
+    distance : float
+        Расстояние Фреше между кривыми.
+    """
+    curve1_2d = convert_to_2d(curve1)
+    curve2_2d = convert_to_2d(curve2)
+    return frechet_dist(curve1_2d, curve2_2d)
 
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
     """
@@ -66,8 +91,9 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
     for i in range(len(full_curve) - fragment_length + 1):
         current_segment = full_curve[i:i + fragment_length]
         current_segment_norm = normalize_data(current_segment)
-        distance = calculate_area(current_segment_norm, fragment_norm)
+        distance = Freshe_dist(current_segment_norm, fragment_norm)
         #print(F"dist {distance}")
+
         if distance < min_area:
             min_area = distance
             best_match_index = i
