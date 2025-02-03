@@ -14,8 +14,9 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import numpy as np
 from typing import Union
-
-from metrics import square_method
+from metrics import square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance
+from functools import wraps
+import time
 
 max_depth = 0
 min_depth = float("inf")
@@ -50,6 +51,15 @@ tab1 = tk.Frame(notebook)
 tab2 = tk.Frame(notebook)
 tab3 = tk.Frame(notebook)
 
+def determ_the_time_spent(func_0):
+    @wraps(func_0)
+    def func(*args, **kwargs):
+        start_time = time.time()
+        result = func_0(*args, **kwargs)
+        end_time = time.time()
+        print(F"Время затраченное на выполнение функции {func_0} = {end_time-start_time:.2f}")
+        return result
+    return func
 
 class PS_curve():
     """
@@ -250,7 +260,7 @@ class PS_curve():
             x, y = self.main_canvas.canvasx(event.x), self.main_canvas.canvasy(event.y)
             self.main_canvas.create_rectangle(self.list_point[0], self.list_point[1], x, y, outline='blue', fill='blue',
                                               stipple='gray50', tags="rec")
-
+    @determ_the_time_spent
     def on_canvas_release(self, event):
         """
         Функция принимает top и bottom отметки глубины
@@ -270,14 +280,14 @@ class PS_curve():
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
 
         for instance in instances:
-            score, plp = find_best_match(curve_data, instance.ps_point)
+            score, plp = Hausdorf_distance.find_best_match(curve_data, instance.ps_point)
 
             len_frag = point_bot - point_top
 
             val = instance.depth[0] + (score * .2)
             instance.main_canvas.create_rectangle(0, val, 370, val+len_frag, outline='green', fill='green',
                                               stipple='gray50', tags="rec")
-            print(F"len_frag   -  {len_frag}")
+            print(F"len_frag - {len_frag}")
 
         print(F"score, plp {score, plp}")
 
@@ -333,7 +343,7 @@ class PS_curve():
                 canvas_.yview_scroll(1, "units")
 
 
-def normalize_data(data: np.ndarray) -> np.ndarray:
+'''def normalize_data(data: np.ndarray) -> np.ndarray:
     """
     Нормирует данные путем вычитания среднего значения и деления на стандартное отклонение.
 
@@ -395,8 +405,8 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
         min_area : float
             Минимальная площадь между нормализованным фрагментом и соответствующим сегментом полной кривой.
             Чем меньше площадь, тем лучше совпадение.
+    """
 
-        """
     fragment_length = len(fragment)
     best_match_index = -1
     min_area = np.inf
@@ -412,7 +422,7 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
             min_area = area
             best_match_index = i
 
-    return best_match_index, min_area
+    return best_match_index, min_area'''
 
 
 class Depth_curve:
@@ -431,7 +441,7 @@ class Depth_curve:
         ------
         draw_depth(y_temp, y_fact):
             Отрисовывает значение глубины на холсте.
-        """
+    """
     def __init__(self, master, max_h, min_h, step):
         self.max_h, self.min_h, self.step, self.master = max_h, min_h, step, master
 
@@ -499,7 +509,7 @@ def open_las_file(full_path=None):
         """
     global curves, depth_canvas, depths, list_obj_on_canvas_2, num_column
 
-    try:
+    if 1:
         if full_path is None:
             file_path = tk.filedialog.askopenfilename(initialdir=".",
                                                       filetypes=[("LAS File", ".las")])
@@ -526,11 +536,11 @@ def open_las_file(full_path=None):
             PS_curve(canvas_2, depths, curves, name_)
             num_column += 1
 
-    except:
+    ''' except:
         tk.messagebox.showinfo("Ошибка", f"При загрузке LAS файла произошла неизвестная ошибка")
         return
     else:
-        tk.messagebox.showinfo("Выполнено", f" Файл {file_path.split('/')[-1]} успешно загружен \n {min_d} м. -  {max_d} м. Шаг - {step} м.")
+        tk.messagebox.showinfo("Выполнено", f" Файл {file_path.split('/')[-1]} успешно загружен \n {min_d} м. -  {max_d} м. Шаг - {step} м.")'''
 
 
 
@@ -687,6 +697,12 @@ def load_bondary():
     except:
         tk.messagebox.showinfo("Ошибка", f"При загрузке файла произошла неизвестная ошибка")
 
+def on_key_press(event):
+    global select_curve
+
+    if event.keysym == "1":
+        select_curve = not select_curve
+
 
 # Создаем меню "Файл"
 file_menu = tk.Menu(menu, tearoff=0)
@@ -732,7 +748,7 @@ canvas_2 = tk.Canvas(tab2, bg="#FFFFFF", width=10000, height=1000)
 canvas_2.pack(padx=5, pady=5)
 
 canvas_2.config(scrollregion=canvas_2.bbox("all"))
-
+canvas_2.bind("<KeyPress>", on_key_press)
 notebook.add(tab3, text='Поверхность')
 
 button_frame_3 = tk.Frame(tab3)
