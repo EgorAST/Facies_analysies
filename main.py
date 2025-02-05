@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import numpy as np
 from typing import Union
-from metrics import square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, Freshe_dist
+from metrics import (square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, DTW, RMS, MAE,
+                     pearson_correlation, cross_correlation_aka_fvk)
 from functools import wraps
 import time
 
@@ -280,8 +281,8 @@ class PS_curve():
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
 
         for instance in instances:
-            score, plp = Freshe_dist.find_best_match(curve_data, instance.ps_point)
-
+            score, plp = cross_correlation_aka_fvk.find_best_match(curve_data, instance.ps_point)
+            print(F"score, plp {score, plp}")
             len_frag = point_bot - point_top
 
             val = instance.depth[0] + (score * .2)
@@ -289,7 +290,7 @@ class PS_curve():
                                               stipple='gray50', tags="rec")
             print(F"len_frag - {len_frag}")
 
-        print(F"score, plp {score, plp}")
+
 
 
     def move_main_canvas(self, event):

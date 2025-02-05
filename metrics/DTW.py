@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union
-from similaritymeasures import frechet_dist
+
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -25,41 +25,44 @@ def normalize_data(data: np.ndarray) -> np.ndarray:
         return data - mean
     return (data - mean) / std
 
-def convert_to_2d(curve: np.ndarray) -> np.ndarray:
+
+def calculate_dtw(sequence1: np.ndarray, sequence2: np.ndarray) -> float:
     """
-    Преобразует одномерный массив в двумерный, где каждая точка представлена как [x, y].
+    Вычисляет расстояние между двумя последовательностями с использованием алгоритма DTW.
 
     Параметры:
     ----------
-    curve : np.ndarray
-        Одномерный массив значений.
+    sequence1 : np.ndarray
+        Первая последовательность (кривая).
+    sequence2 : np.ndarray
+        Вторая последовательность (кривая).
 
     Возвращает:
     ----------
-    curve_2d : np.ndarray
-        Двумерный массив точек [x, y].
+    float
+        Расстояние DTW между двумя последовательностями.
     """
-    return np.array([[x, i] for i, x in enumerate(curve)])
+    n = len(sequence1)
+    m = len(sequence2)
 
-def Freshe_dist(curve1: np.ndarray, curve2: np.ndarray) -> float:
-    """
-    Вычисляет расстояние Фреше между двумя кривыми.
+    # Создаем матрицу расстояний
+    dtw_matrix = np.zeros((n + 1, m + 1))
 
-    Параметры:
-    ----------
-    curve1 : np.ndarray
-        Первая кривая, представленная как массив точек (N x 2).
-    curve2 : np.ndarray
-        Вторая кривая, представленная как массив точек (M x 2).
+    # Инициализируем первую строку и первый столбец бесконечностью
+    dtw_matrix[0, 1:] = np.inf
+    dtw_matrix[1:, 0] = np.inf
 
-    Возвращает:
-    ----------
-    distance : float
-        Расстояние Фреше между кривыми.
-    """
-    curve1_2d = convert_to_2d(curve1)
-    curve2_2d = convert_to_2d(curve2)
-    return frechet_dist(curve1_2d, curve2_2d)
+    # Заполняем матрицу расстояний
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            cost = np.linalg.norm(sequence1[i - 1] - sequence2[j - 1])
+            dtw_matrix[i, j] = cost + min(dtw_matrix[i - 1, j],  # Вставка
+                                          dtw_matrix[i, j - 1],  # Удаление
+                                          dtw_matrix[i - 1, j - 1])  # Совпадение
+
+    # Возвращаем расстояние DTW
+    return dtw_matrix[n, m]
+
 
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
     """
@@ -78,8 +81,6 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
             Индекс начала наилучшего совпадения фрагмента на полной кривой.
             Если совпадение не найдено, возвращает -1.
         min_area : float
-            Минимальная площадь между нормализованным фрагментом и соответствующим сегментом полной кривой.
-            Чем меньше площадь, тем лучше совпадение.
 
         """
     fragment_length = len(fragment)
@@ -91,10 +92,11 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
     for i in range(len(full_curve) - fragment_length + 1):
         current_segment = full_curve[i:i + fragment_length]
         current_segment_norm = normalize_data(current_segment)
-        distance = Freshe_dist(current_segment_norm, fragment_norm)
-        #print(F"dist {distance}")
+        distance = calculate_dtw(current_segment_norm, fragment_norm)
+        print(F"Осталось {i-len(full_curve) - fragment_length}")
 
         if distance < min_area:
+            print(F"distance {distance}")
             min_area = distance
             best_match_index = i
 
