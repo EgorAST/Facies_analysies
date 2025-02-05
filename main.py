@@ -15,7 +15,7 @@ from scipy.interpolate import griddata
 import numpy as np
 from typing import Union
 from metrics import (square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, DTW, RMS, MAE,
-                     pearson_correlation, cross_correlation_aka_fvk)
+                     pearson_correlation, cross_correlation_aka_fvk, Koef_spearmanr, fft, hu_moments, derivative)
 from functools import wraps
 import time
 
@@ -281,7 +281,7 @@ class PS_curve():
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
 
         for instance in instances:
-            score, plp = cross_correlation_aka_fvk.find_best_match(curve_data, instance.ps_point)
+            score, plp = derivative.find_best_match(curve_data, instance.ps_point)
             print(F"score, plp {score, plp}")
             len_frag = point_bot - point_top
 

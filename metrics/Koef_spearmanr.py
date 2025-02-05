@@ -1,8 +1,6 @@
 import numpy as np
-import cv2
-from scipy.spatial.distance import euclidean
 from typing import Union
-
+from scipy.stats import spearmanr
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -28,30 +26,30 @@ def normalize_data(data: np.ndarray) -> np.ndarray:
     return (data - mean) / std
 
 
-def calculate_hu_moments(sequence: np.ndarray) -> np.ndarray:
+def spearman_correlation(sequence1: np.ndarray, sequence2: np.ndarray) -> float:
     """
-    Вычисляет Hu моменты для кривой.
+    Вычисляет коэффициент корреляции Спирмена между двумя последовательностями.
 
     Параметры:
     ----------
-    sequence : np.ndarray
-        Последовательность (кривая), представленная как массив точек (x, y).
+    sequence1 : np.ndarray
+        Первая последовательность (кривая).
+    sequence2 : np.ndarray
+        Вторая последовательность (кривая).
 
     Возвращает:
     ----------
-    np.ndarray
-        Массив из 7 Hu моментов.
+    float
+        Коэффициент корреляции Спирмена между двумя последовательностями.
     """
-    # Преобразуем кривую в формат, подходящий для OpenCV
-    curve = sequence.reshape(-1, 1, 2).astype(np.float32)
+    if len(sequence1) != len(sequence2):
+        raise ValueError("Последовательности должны иметь одинаковую длину.")
 
-    # Вычисляем моменты
-    moments = cv2.moments(curve)
+    # Вычисляем коэффициент корреляции Спирмена
+    correlation, _ = spearmanr(sequence1, sequence2)
 
-    # Вычисляем Hu моменты
-    hu_moments = cv2.HuMoments(moments).flatten()
+    return correlation
 
-    return hu_moments
 
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
     """
@@ -76,20 +74,14 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
     best_match_index = -1
     min_area = - np.inf
     fragment_norm = normalize_data(fragment)
-    fragment_norm = [(x, i) for i, x in enumerate(fragment_norm)]
-    print(F"fragment_norm {fragment_norm}")
+
+
     for i in range(len(full_curve) - fragment_length + 1):
         current_segment = full_curve[i:i + fragment_length]
         current_segment_norm = normalize_data(current_segment)
-        current_segment_norm = [(x, i) for i, x in enumerate(current_segment_norm)]
-
-        hu_moments1 = calculate_hu_moments(current_segment_norm)
-        hu_moments2 = calculate_hu_moments(fragment_norm)
-
-        distance = euclidean(hu_moments1, hu_moments2)
-
+        distance = spearman_correlation(current_segment_norm, fragment_norm)
         if distance > min_area:
-            print(F"distance {distance}")
+            print(F"distance {distance}, spearman")
             min_area = distance
             best_match_index = i
 
