@@ -281,7 +281,7 @@ class PS_curve():
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
 
         for instance in instances:
-            score, plp = derivative.find_best_match(curve_data, instance.ps_point)
+            score, plp = DTW.find_best_match(curve_data, instance.ps_point)
             print(F"score, plp {score, plp}")
             len_frag = point_bot - point_top
 

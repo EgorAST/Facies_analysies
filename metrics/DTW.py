@@ -1,6 +1,7 @@
 import numpy as np
+from fastdtw import fastdtw
 from typing import Union
-
+from scipy.spatial.distance import euclidean
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -19,11 +20,7 @@ def normalize_data(data: np.ndarray) -> np.ndarray:
 
     """
 
-    mean = np.mean(data)
-    std = np.std(data)
-    if std == 0:
-        return data - mean
-    return (data - mean) / std
+    return (data - np.mean(data)) / np.std(data)
 
 
 def calculate_dtw(sequence1: np.ndarray, sequence2: np.ndarray) -> float:
@@ -61,6 +58,8 @@ def calculate_dtw(sequence1: np.ndarray, sequence2: np.ndarray) -> float:
                                           dtw_matrix[i - 1, j - 1])  # Совпадение
 
     # Возвращаем расстояние DTW
+    print(F"dtw_matrix {dtw_matrix}")
+
     return dtw_matrix[n, m]
 
 
@@ -87,17 +86,22 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
     best_match_index = -1
     min_area = np.inf
     fragment_norm = normalize_data(fragment)
+    full_curve_norm = normalize_data(full_curve)
 
+    distance, _ = fastdtw(fragment_norm, full_curve_norm, dist=2)
 
-    for i in range(len(full_curve) - fragment_length + 1):
+    print(F"MAX MAX MAX {distance}")
+
+    """for i in range(len(full_curve) - fragment_length + 1):
         current_segment = full_curve[i:i + fragment_length]
         current_segment_norm = normalize_data(current_segment)
-        distance = calculate_dtw(current_segment_norm, fragment_norm)
-        print(F"Осталось {i-len(full_curve) - fragment_length}")
+        # Вычисляем DTW расстояние между фрагментом и текущим сегментом
+        distance, _ = fastdtw(fragment_norm, current_segment_norm, dist=2)
 
         if distance < min_area:
-            print(F"distance {distance}")
+            print(F"distance {distance}, dtw")
             min_area = distance
             best_match_index = i
-
-    return best_match_index, min_area
+            if distance < 6:
+                return best_match_index, min_area
+    return best_match_index, min_area"""
