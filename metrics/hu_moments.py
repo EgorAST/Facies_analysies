@@ -89,12 +89,21 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray) -> Union[int, 
 
         hu_moments1 = calculate_hu_moments(current_segment_norm)
         hu_moments2 = calculate_hu_moments(fragment_norm)
-        #print(F"hu_moments1, hu_moments2 - {hu_moments1, hu_moments2}")
-        hu_moments1_normalized = hu_moments1 / np.linalg.norm(hu_moments1)
-        hu_moments2_normalized = hu_moments2 / np.linalg.norm(hu_moments2)
-        #print(F"hu_moments1_normalized_1 , hu_moments1_normalized - {hu_moments1_normalized, hu_moments2_normalized}")
-        distance = euclidean(hu_moments1_normalized, hu_moments2_normalized)
-        #print(F"distance {distance}")
+
+        if np.isnan(hu_moments1).any() or np.isinf(hu_moments1).any() or \
+                np.isnan(hu_moments2).any() or np.isinf(hu_moments2).any():
+            # Обработка случая с некорректными значениями
+            distance = np.inf
+        else:
+            norm1 = np.linalg.norm(hu_moments1)
+            norm2 = np.linalg.norm(hu_moments2)
+            if norm1 == 0 or norm2 == 0:
+                distance = np.inf
+            else:
+                hu_moments1_normalized = hu_moments1 / norm1
+                hu_moments2_normalized = hu_moments2 / norm2
+                distance = euclidean(hu_moments1_normalized, hu_moments2_normalized)
+
         if distance < min_area:
 
             min_area = distance

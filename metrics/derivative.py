@@ -55,7 +55,7 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray) -> Union[int, 
             min_area = correlation
             best_match_index = i
 
-    plt.figure(figsize=(10, 6))
+    """plt.figure(figsize=(10, 6))
 
     freq = np.arange(len(fragment_derivative))
     # График амплитудного спектра первой последовательности
@@ -66,6 +66,6 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray) -> Union[int, 
     plt.title(f"корреляция = {min_area}")
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.show()"""
 
     return best_match_index, min_area

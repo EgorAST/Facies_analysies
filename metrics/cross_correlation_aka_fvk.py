@@ -62,12 +62,14 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray) -> Union[int, 
         current_segment_norm = normalize_data(current_segment)
 
         # Вычисляем взаимную корреляцию
-        correlation = correlate(fragment_norm, current_segment_norm, mode='valid')
-        correlation_value = correlation[0]  # Используем значение корреляции
+        correlation = np.correlate(fragment_norm, current_segment_norm, mode='valid')
 
-        # Если текущая корреляция больше максимальной, обновляем максимум
+        # Нормируем корреляцию
+        norm_correlation = correlation / (np.sqrt(np.sum(fragment_norm ** 2) * np.sum(current_segment_norm ** 2)))
+        correlation_value = norm_correlation[0]
+
+        # Обновляем лучший результат, если текущая корреляция больше
         if correlation_value > max_correlation:
-            print(F"correlation_value {correlation_value}, fvk")
             max_correlation = correlation_value
             best_match_index = i
 

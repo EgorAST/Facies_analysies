@@ -279,9 +279,12 @@ class PS_curve():
         self.list_point = []
 
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
-
+        #(square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, DTW, RMS, MAE,
+        #pearson_correlation, cross_correlation_aka_fvk, Koef_spearmanr, fft, hu_moments, derivative)
         for instance in instances:
-            score, plp = DTW.find_best_match(curve_data, instance.ps_point)
+
+            score, plp = cross_correlation_aka_fvk.find_best_match(curve_data, instance.ps_point)
+
             print(F"score, plp {score, plp}")
             len_frag = point_bot - point_top
 
@@ -591,12 +594,28 @@ def load_coord_well():
     else:
         full_well_value(button_frame_3)
 
+# list_val = [5821, 5676, 5774, 7061 , 7051, 7057, 7191, 7119, 5747, 5655, 5849, 5743, 7076, 7077, 7065, 7108, 7122, 7140, 267] #Структура - 1
+#list_val = [5140, 5059, 5167, 6457, 6447, 6449, 6460, 6455, 5047, 4984, 5148, 5058, 6390, 6392, 6410, 6437, 6460, 6470] #Структура - 2
+#list_val = [4914, 4839, 4945, 6240, 6226, 6230, 6242, 6245, 4827, 4774, 4933, 4844, 6146, 6155, 6161, 6198, 6214, 6225] #Структура - 3
+list_val = [4341, 4289, 4469, 5708, 5702, 5695, 5649, 5665, 4197, 4164, 4296, 4216, 5600, 5591, 5605, 5660, 5646, 5645] #Структура - 4
+#list_val = [3447, 3397, 3524, 4816, 4805, 4819, 4792, 4788, 3322, 3296, 4308, 3337, 4699, 4678, 4688, 4746, 4813, 4810] #Структура - 5
+#list_val = [2797, 2784, 2902, 4218, 4202, 4203, 4287, 4210, 2727, 2713, 2812, 2749, 4105, 4093, 4100, 4158, 4187, 4180] #Структура - 6
+#list_val = [1803, 1624, 1764, 3080, 3069, 3032, 1732, 1609, 1861, 1740, 3005, 3019, 3025, 3068, 3037, 3050] #Структура - 7
 
+list_instance_val = []
+abs_val = []
 def full_well_value(frame):
-    global well_value
-    for well in list(well_coord):
-        well_value[str(well)] = random.randint(1120, 1360)
-    print(F"well_value {well_value}")
+    global well_value, list_instance_val, abs_val
+    for instance in instances:
+        print(F"instance.depth[0] - {instance.depth[0]}")
+        list_instance_val.append(instance.depth[0])
+
+
+
+    for i, well in enumerate(list(well_coord)):
+        print(F"i, well {i, well}")
+        well_value[str(well)] = list_val[i]*.2 +list_instance_val[i]
+        abs_val.append(list_val[i]*.2 +list_instance_val[i])
 
     x = []
     y = []
@@ -604,21 +623,48 @@ def full_well_value(frame):
 
     for key in well_coord.keys():
         lat, lon = well_coord[key]
-        x.append(float(lat))
-        y.append(float(lon))
+        x.append(float(lon))
+        y.append(float(lat))
         z.append(well_value[key])
+    padding = 0.1
 
-    # Создание сетки для интерполяции
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+
+    # Создаем сетку для интерполяции
+    grid_x, grid_y = np.mgrid[min(x):max(x):100j, min(y):max(y):100j]
+
+    # Интерполяция (линейная, кубическая или nearest)
+    grid_z = griddata((x, y), z, (grid_x, grid_y), method='linear')
+
+    # Транспонирование матрицы (если нужно)
+    #grid_z = grid_z.T  # Транспонируем, если данные отображаются неправильно
+
+    # Построение карты
+    plt.figure(figsize=(10, 6))
+    contour = plt.contourf(grid_x, grid_y,  grid_z, levels=20,
+                           cmap='terrain_r')  # Меняем grid_x и grid_y местами, если нужно
+
+    plt.colorbar(contour, label='Глубина м.')
+    plt.scatter(x, y, c='red', s=50, edgecolor='k', label='Скважины')  # Отображение исходных точек
+    plt.xlabel('Широта (Y)')
+    plt.ylabel('Долгота (X)')
+    plt.title('Поверхность')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    """# Создание сетки для интерполяции
     grid_x, grid_y = np.mgrid[min(x):max(x):100j, min(y):max(y):100j]
 
     # Интерполяция значений
-    grid_z = griddata((x, y), z, (grid_x, grid_y), method='cubic')
+    grid_z = griddata((x, y), z, (grid_x, grid_y), method='linear')
     fig, ax = plt.subplots(figsize=(8, 6))
-    img = ax.imshow(grid_z.T, extent=(min(y), max(y), min(x), max(x)), origin='lower', cmap='viridis', vmin=1120,
-                    vmax=1360)
+    img = ax.imshow(grid_z, cmap='viridis', vmin=max(abs_val),  vmax=min(abs_val))
     cbar = fig.colorbar(img, ax=ax, label='Глубина', shrink=0.8, aspect=10, pad=0.02)
-    cbar.set_ticks(np.linspace(1120, 1360, num=5))
-    cbar.ax.set_yticklabels([f'{tick:.1f}' for tick in np.linspace(1120, 1360, num=5)])
+    cbar.set_ticks(np.linspace(max(abs_val), min(abs_val), num=5))
+    cbar.ax.set_yticklabels([f'{tick:.1f}' for tick in np.linspace(max(abs_val), min(abs_val), num=5)])
 
     ax.scatter(y, x, c='red', label='Скважины', edgecolor='k')
     ax.set_xlabel('Долгота')
@@ -629,7 +675,7 @@ def full_well_value(frame):
     # Встраивание графика в Tkinter
     canvas = FigureCanvasTkAgg(fig, master=frame)
     canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)"""
 
     # 3D вариант
     """

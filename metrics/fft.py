@@ -99,23 +99,6 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
             min_area = distance
             best_match_index = i
 
-    plt.figure(figsize=(10, 6))
 
-    # Частотная ось (в единицах частоты)
-    freq = np.fft.fftfreq(len(fragment_norm))
-
-    # График амплитудного спектра первой последовательности
-    plt.plot(freq, amplitude_spectrum1, label="Спектр Эталона", color="blue", alpha=1)
-
-    # График амплитудного спектра второй последовательности
-    plt.plot(freq, amplitude_spectrum2, label="Спектр Объекта", color="red", alpha=1)
-
-    # Настройки графика
-    plt.title(f"Амплитудные спектры, корреляция = {min_area}")
-    plt.xlabel("Частота")
-    plt.ylabel("Амплитуда (нормированная)")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
 
     return best_match_index, min_area

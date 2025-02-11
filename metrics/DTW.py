@@ -1,4 +1,4 @@
-import numpy as np
+'''import numpy as np
 from fastdtw import fastdtw
 from typing import Union
 from scipy.spatial.distance import euclidean
@@ -53,14 +53,11 @@ def calculate_dtw(sequence1: np.ndarray, sequence2: np.ndarray) -> float:
     for i in range(1, n + 1):
         for j in range(1, m + 1):
             cost = np.linalg.norm(sequence1[i - 1] - sequence2[j - 1])
-            dtw_matrix[i, j] = cost + min(dtw_matrix[i - 1, j],  # Вставка
-                                          dtw_matrix[i, j - 1],  # Удаление
-                                          dtw_matrix[i - 1, j - 1])  # Совпадение
+            dtw_matrix[i, j] = cost + min(dtw_matrix[i - 1, j],
+                                          dtw_matrix[i, j - 1],
+                                          dtw_matrix[i - 1, j - 1])
 
-    # Возвращаем расстояние DTW
-    print(F"dtw_matrix {dtw_matrix}")
-
-    return dtw_matrix[n, m]
+    return dtw_matrix[n, m]//0.2
 
 
 def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
@@ -88,9 +85,13 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
     fragment_norm = normalize_data(fragment)
     full_curve_norm = normalize_data(full_curve)
 
-    distance, _ = fastdtw(fragment_norm, full_curve_norm, dist=2)
+    #distance, _ = calculate_dtw(fragment_norm, full_curve_norm)
 
-    print(F"MAX MAX MAX {distance}")
+    #print(F"MAX MAX MAX {distance}")
+
+    distance, _ = fastdtw(fragment_norm, full_curve_norm, dist=2)
+    print(f"distance   {distance//0.2}, {distance*0.2}")
+    return distance, 0
 
     """for i in range(len(full_curve) - fragment_length + 1):
         current_segment = full_curve[i:i + fragment_length]
@@ -105,3 +106,31 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
             if distance < 6:
                 return best_match_index, min_area
     return best_match_index, min_area"""
+'''
+
+def binary_search(temp_list, item):
+
+    low = 0
+    high = len(temp_list) - 1
+
+    while low <= high:
+        mid = (high+low)//2
+        param = temp_list[mid]
+
+        if param == item:
+            return mid
+        elif param > item:
+            high = mid - 1
+        elif param < item:
+            low = mid+1
+
+    return None
+
+import time
+_p = list([i for i in range(1000000000)])
+st = time.time()
+astttt = binary_search(_p, 1)
+print(astttt)
+end = time.time()
+
+print(F"time - {end - st}")
