@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Union
-from scipy.signal import correlate
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -44,7 +43,6 @@ def cross_correlation(sequence1: np.ndarray, sequence2: np.ndarray) -> np.ndarra
     """
     # Вычисляем ФВК
     ccf = np.correlate(sequence1, sequence2, mode='full')
-    print(F"ccf - {ccf}")
     return ccf
 
 

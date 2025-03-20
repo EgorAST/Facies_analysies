@@ -1,30 +1,25 @@
 # -*- coding: utf-8 -*-
 #Программа для загрузки LAS файлов и выполнения фациального анализа в автоматическом режиме
 
-
+import pandas as pd
 import os
 import lasio
-import random
 import tkintermapview as tkmap
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import numpy as np
-from typing import Union
 from metrics import (square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, DTW, RMS, MAE,
                      pearson_correlation, cross_correlation_aka_fvk, Koef_spearmanr, fft, hu_moments, derivative)
 from functools import wraps
 import time
 
-max_depth = 0
-min_depth = float("inf")
-delta = .2
-zoom_lvl = 1
-num = 0
-num_column = 0
+MAX_DEPTH = 0
+MIN_DEPTH = float("inf")
+ZOOM_LVL = 1
+NUM_COLUMN = 0
 
 select_curve = False
 
@@ -32,12 +27,24 @@ curves = {}
 well_value = {}
 well_coord = {}
 
+
+list_val = []
 list_canvas = []
 instances = []
 list_canvas_scroll = []
 scores = []
 depths = []
 list_obj_on_canvas_2 = []
+rep_list = []
+list_instance_val = []
+abs_val = []
+boundary_list = []
+
+rep_name = ["G1t", "G1b", "G2 t", "G2 b", "k2", "К2 kamp", "k1al2", "k1al3+al2", "k1rep1", "k1rep2gl", "k1al1" ,
+            "k1apt+vot", "k1apt+gl", "K1apt1-I", "K1apt1-II", "K1nk-III", "J-IV", "j3", "J2bj", "J2bjr1top", "J2bjr1bot", "J2baa"]
+
+name_well = [1, 2, 3, 4, 5, 6,]
+
 
 root = tk.Tk()
 root.state('zoomed')
@@ -137,7 +144,8 @@ class PS_curve():
             well_name : str
                 Название скважины.
         """
-        global max_depth, min_depth, canvas_depth, zoom_lvl, list_canvas, instances, canvas_2, list_canvas_scroll, num, scores
+        global MAX_DEPTH, MIN_DEPTH, canvas_depth, ZOOM_LVL, list_canvas, instances, canvas_2, list_canvas_scroll, scores
+
         self.scroll_value = 0
         instances.append(self)
         self.master = master
@@ -145,20 +153,21 @@ class PS_curve():
         self.curve = curve
         self.well_name = well_name
         self.set_curve = set(list(self.curve.values())[0])
+
         self.canvas_w = 190
-        self.canvas_h = 745
+        self.canvas_h = self.master.winfo_height()
 
 
-        if max_depth < self.depth[1]:
-            max_depth = self.depth[1]
+        if MAX_DEPTH < self.depth[1]:
+            MAX_DEPTH = self.depth[1]
             Canvas_depth_.max_h = self.depth[1]
 
-        if min_depth > self.depth[0]:
+        if MIN_DEPTH > self.depth[0]:
             Canvas_depth_.min_h = self.depth[0]
-            min_depth = self.depth[0]
+            MIN_DEPTH = self.depth[0]
 
         self.canvas_ = tk.Canvas(self.master)
-        self.canvas_.grid(column=num_column, row=0)
+        self.canvas_.grid(column=NUM_COLUMN, row=0)
 
         self.name_frame = tk.Frame(self.canvas_, background="white", border=2)
         self.name_frame.pack(side=tk.TOP, fill=tk.BOTH, padx=1, pady=1)
@@ -234,6 +243,14 @@ class PS_curve():
 
                 self.main_canvas.create_line(x_1, y_1, x_2, y_2, fill="red", tags="line", width=2)
 
+    def draw_rep_on_curve(self):
+        id = name_well.index(int(self.well_name))
+        list_temp = list(rep_list[id].value())
+
+        for y in list_temp:
+            self.main_canvas.create_line(0, y, self.canvas_w, y,
+                                         fill='blue',
+                                         width=1, tags="coord_line")
     def draw_grid(self):
         """
         Наносит на канвас координатную сетку
@@ -279,21 +296,13 @@ class PS_curve():
         self.list_point = []
 
         curve_data = self.ps_point[firs_val_slice:sec_val_slice]
-        #(square_method, euclidean_distance, Manhattan_distance, Hausdorf_distance, DTW, RMS, MAE,
-        #pearson_correlation, cross_correlation_aka_fvk, Koef_spearmanr, fft, hu_moments, derivative)
+
         for instance in instances:
-
             score, plp = cross_correlation_aka_fvk.find_best_match(curve_data, instance.ps_point)
-
-            print(F"score, plp {score, plp}")
             len_frag = point_bot - point_top
-
             val = instance.depth[0] + (score * .2)
             instance.main_canvas.create_rectangle(0, val, 370, val+len_frag, outline='green', fill='green',
                                               stipple='gray50', tags="rec")
-            print(F"len_frag - {len_frag}")
-
-
 
 
     def move_main_canvas(self, event):
@@ -308,23 +317,22 @@ class PS_curve():
             self.main_canvas.configure(cursor="")
 
     def scroll_canvas(self, event):
-        global zoom_lvl
+        global ZOOM_LVL
 
         if event.state & 0x0004:
-            #Зуммирование
             if event.delta > 0:
-                zoom_lvl *= 1.2
+                ZOOM_LVL *= 1.2
             else:
-                zoom_lvl *= 0.8
+                ZOOM_LVL *= 0.8
 
             for instance in instances:
                 instance.main_canvas.delete("line")
                 for i, point in enumerate(instance.ps_point):
                     if i < len(instance.ps_point) - 1:
                         x_1 = point
-                        y_1 = instance.depth[0] + (.2 * i) * zoom_lvl
+                        y_1 = instance.depth[0] + (.2 * i) * ZOOM_LVL
                         x_2 = instance.ps_point[i + 1]
-                        y_2 = instance.depth[0] + (.2 * (i + 1)) * zoom_lvl
+                        y_2 = instance.depth[0] + (.2 * (i + 1)) * ZOOM_LVL
 
                         instance.max_ = x_1 if instance.max_ < x_1 else instance.max_
 
@@ -332,101 +340,17 @@ class PS_curve():
 
                         instance.main_canvas.create_line(x_1, y_1, x_2, y_2, fill="red", tags="line")
 
-            return
+            draw_rep()
 
         elif event.delta > 0:
-            #Скролл вниз
             for canvas_ in list_canvas:
                 self.scroll_value -= 1
                 canvas_.yview_scroll(-1, "units")
 
         elif event.delta < 0:
-            #Скролл вверх
             for canvas_ in list_canvas:
                 self.scroll_value += 1
                 canvas_.yview_scroll(1, "units")
-
-
-'''def normalize_data(data: np.ndarray) -> np.ndarray:
-    """
-    Нормирует данные путем вычитания среднего значения и деления на стандартное отклонение.
-
-    Параметры:
-    ----------
-    data : np.ndarray
-        Входной массив данных, который требуется нормировать.
-
-    Возвращает:
-    -----------
-    np.ndarray
-        Нормированный массив данных. Если стандартное отклонение равно нулю,
-        возвращается массив, из которого вычтено среднее значение.
-
-    """
-
-    mean = np.mean(data)
-    std = np.std(data)
-    if std == 0:
-        return data - mean
-    return (data - mean) / std
-
-def calculate_area(segment1: np.ndarray, segment2: np.ndarray) -> float | int:
-    """
-    Вычисляет площадь между двумя кривыми с использованием метода трапеций.
-
-    Параметры:
-    ----------
-    segment1 : np.ndarray
-        Первый массив значений, представляющий первую кривую.
-    segment2 : np.ndarray
-        Второй массив значений, представляющий вторую кривую.
-
-    Возвращает:
-    -----------
-    float | int
-        Площадь между двумя кривыми, вычисленная как интеграл от модуля разности
-        значений двух кривых с использованием метода трапеций.
-
-    """
-    return np.trapz(np.abs(segment1 - segment2))
-
-def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, float]:
-    """
-        Находит наилучшее совпадение фрагмента на полной кривой, используя метод сравнения площадей.
-
-        Параметры:
-        ----------
-        fragment : np.ndarray
-            Фрагмент кривой, который необходимо найти на полной кривой.
-        full_curve : np.ndarray
-            Полная кривая, на которой производится поиск фрагмента.
-
-        Возвращает:
-        ----------
-        best_match_index : int
-            Индекс начала наилучшего совпадения фрагмента на полной кривой.
-            Если совпадение не найдено, возвращает -1.
-        min_area : float
-            Минимальная площадь между нормализованным фрагментом и соответствующим сегментом полной кривой.
-            Чем меньше площадь, тем лучше совпадение.
-    """
-
-    fragment_length = len(fragment)
-    best_match_index = -1
-    min_area = np.inf
-    fragment_norm = normalize_data(fragment)
-
-
-    for i in range(len(full_curve) - fragment_length + 1):
-        current_segment = full_curve[i:i + fragment_length]
-        current_segment_norm = normalize_data(current_segment)
-        area = calculate_area(current_segment_norm, fragment_norm)
-
-        if area < min_area:
-            min_area = area
-            best_match_index = i
-
-    return best_match_index, min_area'''
 
 
 class Depth_curve:
@@ -506,11 +430,11 @@ def open_las_file(full_path=None):
             Список, содержащий минимальную, максимальную глубину и шаг.
         list_obj_on_canvas_2 : list
             Список объектов на холсте.
-        num_column : int
+        NUM_COLUMN : int
             Счетчик колонок.
 
         """
-    global curves, depth_canvas, depths, list_obj_on_canvas_2, num_column
+    global curves, depth_canvas, depths, list_obj_on_canvas_2, NUM_COLUMN
 
     if 1:
         if full_path is None:
@@ -537,14 +461,7 @@ def open_las_file(full_path=None):
                     depths = [min_d, max_d, step]
 
             PS_curve(canvas_2, depths, curves, name_)
-            num_column += 1
-
-    ''' except:
-        tk.messagebox.showinfo("Ошибка", f"При загрузке LAS файла произошла неизвестная ошибка")
-        return
-    else:
-        tk.messagebox.showinfo("Выполнено", f" Файл {file_path.split('/')[-1]} успешно загружен \n {min_d} м. -  {max_d} м. Шаг - {step} м.")'''
-
+            NUM_COLUMN += 1
 
 
 def open_die_las_file():
@@ -594,28 +511,18 @@ def load_coord_well():
     else:
         full_well_value(button_frame_3)
 
-# list_val = [5821, 5676, 5774, 7061 , 7051, 7057, 7191, 7119, 5747, 5655, 5849, 5743, 7076, 7077, 7065, 7108, 7122, 7140, 267] #Структура - 1
-#list_val = [5140, 5059, 5167, 6457, 6447, 6449, 6460, 6455, 5047, 4984, 5148, 5058, 6390, 6392, 6410, 6437, 6460, 6470] #Структура - 2
-#list_val = [4914, 4839, 4945, 6240, 6226, 6230, 6242, 6245, 4827, 4774, 4933, 4844, 6146, 6155, 6161, 6198, 6214, 6225] #Структура - 3
-list_val = [4341, 4289, 4469, 5708, 5702, 5695, 5649, 5665, 4197, 4164, 4296, 4216, 5600, 5591, 5605, 5660, 5646, 5645] #Структура - 4
-#list_val = [3447, 3397, 3524, 4816, 4805, 4819, 4792, 4788, 3322, 3296, 4308, 3337, 4699, 4678, 4688, 4746, 4813, 4810] #Структура - 5
-#list_val = [2797, 2784, 2902, 4218, 4202, 4203, 4287, 4210, 2727, 2713, 2812, 2749, 4105, 4093, 4100, 4158, 4187, 4180] #Структура - 6
-#list_val = [1803, 1624, 1764, 3080, 3069, 3032, 1732, 1609, 1861, 1740, 3005, 3019, 3025, 3068, 3037, 3050] #Структура - 7
 
-list_instance_val = []
-abs_val = []
+
 def full_well_value(frame):
     global well_value, list_instance_val, abs_val
+
     for instance in instances:
-        print(F"instance.depth[0] - {instance.depth[0]}")
         list_instance_val.append(instance.depth[0])
 
 
-
     for i, well in enumerate(list(well_coord)):
-        print(F"i, well {i, well}")
-        well_value[str(well)] = list_val[i]*.2 +list_instance_val[i]
-        abs_val.append(list_val[i]*.2 +list_instance_val[i])
+        well_value[str(well)] = list_val[i] * .2 + list_instance_val[i]
+        abs_val.append(list_val[i] * .2 + list_instance_val[i])
 
     x = []
     y = []
@@ -626,7 +533,6 @@ def full_well_value(frame):
         x.append(float(lon))
         y.append(float(lat))
         z.append(well_value[key])
-    padding = 0.1
 
     x = np.array(x)
     y = np.array(y)
@@ -637,9 +543,6 @@ def full_well_value(frame):
 
     # Интерполяция (линейная, кубическая или nearest)
     grid_z = griddata((x, y), z, (grid_x, grid_y), method='linear')
-
-    # Транспонирование матрицы (если нужно)
-    #grid_z = grid_z.T  # Транспонируем, если данные отображаются неправильно
 
     # Построение карты
     plt.figure(figsize=(10, 6))
@@ -655,60 +558,47 @@ def full_well_value(frame):
     plt.grid(True)
     plt.show()
 
-    """# Создание сетки для интерполяции
-    grid_x, grid_y = np.mgrid[min(x):max(x):100j, min(y):max(y):100j]
 
-    # Интерполяция значений
-    grid_z = griddata((x, y), z, (grid_x, grid_y), method='linear')
-    fig, ax = plt.subplots(figsize=(8, 6))
-    img = ax.imshow(grid_z, cmap='viridis', vmin=max(abs_val),  vmax=min(abs_val))
-    cbar = fig.colorbar(img, ax=ax, label='Глубина', shrink=0.8, aspect=10, pad=0.02)
-    cbar.set_ticks(np.linspace(max(abs_val), min(abs_val), num=5))
-    cbar.ax.set_yticklabels([f'{tick:.1f}' for tick in np.linspace(max(abs_val), min(abs_val), num=5)])
+def load_rep():
+    global rep_list
 
-    ax.scatter(y, x, c='red', label='Скважины', edgecolor='k')
-    ax.set_xlabel('Долгота')
-    ax.set_ylabel('Широта')
-    # ax.set_title('')
-    ax.legend()
+    try:
+        file_path = tk.filedialog.askopenfilename(initialdir=".",
+                                                  filetypes=[("Excel File", ".xlsx")])
 
-    # Встраивание графика в Tkinter
-    canvas = FigureCanvasTkAgg(fig, master=frame)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)"""
+        if file_path:
+            if file_path.endswith(".xlsx"):
+                # Чтение файла Excel
+                df = pd.read_excel(file_path)
+                for index, row in df.iterrows():
+                    if index > 0:
+                        rep_dict = {}
 
-    # 3D вариант
-    """
-    grid_x, grid_y = np.mgrid[min(x):max(x):100j, min(y):max(y):100j]
+                        for i, r in enumerate(row):
+                            if isinstance(r, float):
+                                rep_dict[rep_name[i-1]] = r
+                        rep_list.append(rep_dict)
 
-    # Интерполяция значений
-    grid_z = griddata((x, y), z, (grid_x, grid_y), method='cubic')
+    except:
+        tk.messagebox.showinfo("Ошибка", f"При загрузке файла произошла неизвестная ошибка")
 
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
+    finally:
+        draw_rep()
 
-    # Построение поверхности
-    surf = ax.plot_surface(grid_x, grid_y, grid_z, cmap='viridis', edgecolor='none')
+def draw_rep():
+    for instace in instances:
 
-    # Добавление цветовой шкалы
-    cbar = fig.colorbar(surf, ax=ax, label='Глубина', shrink=0.8, aspect=10, pad=0.02)
-    cbar.set_ticks(np.linspace(1120, 1360, num=5))
-    cbar.ax.set_yticklabels([f'{tick:.1f}' for tick in np.linspace(1120, 1360, num=5)])
+        instace.main_canvas.delete("rep")
+        name = int(instace.well_name.split("_")[0])
+        id_curve = int(name_well.index(name))
 
-    ax.scatter(x, y, z, c='red', label='Скважины', edgecolor='k')
-    ax.set_xlabel('Широта')
-    ax.set_ylabel('Долгота')
-    ax.set_zlabel('Глубина')
-    ax.legend()
+        list_temp = list(rep_list[id_curve].values())
+        for i, y in enumerate(list_temp):
+            instace.main_canvas.create_line(0, y, instace.canvas_w, y,
+                                         fill='green',
+                                         width=1, tags="rep")
 
-    # Встраивание графика в Tkinter
-    canvas = FigureCanvasTkAgg(fig, master=frame)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    """
-
-
-boundary_list = []
+            instace.main_canvas.create_text(33, y, text=str(rep_name[i]),  tags="rep")
 
 
 def load_bondary():
@@ -745,7 +635,6 @@ def load_bondary():
 
 def on_key_press(event):
     global select_curve
-
     if event.keysym == "1":
         select_curve = not select_curve
 
@@ -757,6 +646,8 @@ file_menu.add_command(label="Открыть LAS файл", command=open_las_file
 file_menu.add_command(label="Открыть директорию с LAS файлами", command=open_die_las_file, font=("Inter", 10))
 file_menu.add_command(label="Загрузить координаты для скважин", command=load_coord_well, font=("Inter", 10))
 file_menu.add_command(label="Загрузить граница лицензионного участка", command=load_bondary, font=("Inter", 10))
+file_menu.add_command(label="Загрузить отбивки", command=load_rep, font=("Inter", 10))
+
 
 notebook.add(tab1, text='Карта')
 

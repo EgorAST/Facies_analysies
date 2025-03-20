@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Union
-import matplotlib.pyplot as plt
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
@@ -58,10 +57,7 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray) -> Union[int, 
     """plt.figure(figsize=(10, 6))
 
     freq = np.arange(len(fragment_derivative))
-    # График амплитудного спектра первой последовательности
     plt.plot(freq, fragment_derivative, label="Производная Эталона", color="blue", alpha=1)
-
-    # График амплитудного спектра второй последовательности
     plt.plot(freq, segment_derivative_, label="Производная Объекта", color="red", alpha=1)
     plt.title(f"корреляция = {min_area}")
     plt.legend()

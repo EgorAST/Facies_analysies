@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Union
-import time
 
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """

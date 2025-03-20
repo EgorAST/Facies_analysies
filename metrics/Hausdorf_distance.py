@@ -74,7 +74,6 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
         current_segment = full_curve[i:i + fragment_length]
         current_segment_norm = normalize_data(current_segment)
         distance = hausdorf_dist(current_segment_norm, fragment_norm)
-        #print(F"dist {distance}")
         if distance < min_area:
             min_area = distance
             best_match_index = i

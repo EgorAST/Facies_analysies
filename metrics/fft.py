@@ -1,8 +1,6 @@
 import numpy as np
 from typing import Union
 from scipy.fft import fft
-from scipy.spatial.distance import cosine
-import matplotlib.pyplot as plt
 def normalize_data(data: np.ndarray) -> np.ndarray:
     """
     Нормирует данные путем вычитания среднего значения и деления на стандартное отклонение.

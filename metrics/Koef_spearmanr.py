@@ -81,7 +81,6 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
         current_segment_norm = normalize_data(current_segment)
         distance = spearman_correlation(current_segment_norm, fragment_norm)
         if distance > min_area:
-            #print(F"distance {distance}, spearman")
             min_area = distance
             best_match_index = i
 

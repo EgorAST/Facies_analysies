@@ -1,4 +1,4 @@
-'''import numpy as np
+import numpy as np
 from fastdtw import fastdtw
 from typing import Union
 from scipy.spatial.distance import euclidean
@@ -79,58 +79,9 @@ def find_best_match(fragment: np.ndarray, full_curve: np.ndarray)-> Union[int, f
         min_area : float
 
         """
-    fragment_length = len(fragment)
-    best_match_index = -1
-    min_area = np.inf
+
     fragment_norm = normalize_data(fragment)
     full_curve_norm = normalize_data(full_curve)
 
-    #distance, _ = calculate_dtw(fragment_norm, full_curve_norm)
-
-    #print(F"MAX MAX MAX {distance}")
-
     distance, _ = fastdtw(fragment_norm, full_curve_norm, dist=2)
-    print(f"distance   {distance//0.2}, {distance*0.2}")
-    return distance, 0
-
-    """for i in range(len(full_curve) - fragment_length + 1):
-        current_segment = full_curve[i:i + fragment_length]
-        current_segment_norm = normalize_data(current_segment)
-        # Вычисляем DTW расстояние между фрагментом и текущим сегментом
-        distance, _ = fastdtw(fragment_norm, current_segment_norm, dist=2)
-
-        if distance < min_area:
-            print(F"distance {distance}, dtw")
-            min_area = distance
-            best_match_index = i
-            if distance < 6:
-                return best_match_index, min_area
-    return best_match_index, min_area"""
-'''
-
-def binary_search(temp_list, item):
-
-    low = 0
-    high = len(temp_list) - 1
-
-    while low <= high:
-        mid = (high+low)//2
-        param = temp_list[mid]
-
-        if param == item:
-            return mid
-        elif param > item:
-            high = mid - 1
-        elif param < item:
-            low = mid+1
-
-    return None
-
-import time
-_p = list([i for i in range(1000000000)])
-st = time.time()
-astttt = binary_search(_p, 1)
-print(astttt)
-end = time.time()
-
-print(F"time - {end - st}")
+    return distance, None
